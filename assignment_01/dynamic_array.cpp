@@ -240,6 +240,59 @@ void Dynamic_array::remove(int i) {								//-
 }												//-
 												//-
 void Dynamic_array::remove(int start, int end) {						//-
+	// case 1: range error
+	if (start < 0 || start > size || end < 0 || end > size) {
+		throw Subscript_range_exception();
+	}
+
+	// case 2: invalid start and end 
+	if (start > end) {
+		return;	// not sure about this solution
+	}
+
+	// find start block position
+	Block_position start_position = find_block(start);
+
+	// find end block position
+	Block_position end_position = find_block(end);
+
+	// case 3: remove elements
+	int block_size_count = 0;
+	int total_size_count = 0;
+	int start_index = start_position.i;
+	int end_index = end_position.i;
+
+	for (int k = 0; k < end - start; k++) {
+		// if start index = block size start index = next_p->a[0]
+		if (start_index == BLOCK_SIZE){
+			start_index = 0;
+			start_position.block_p = start_position.block_p->next_p;
+		}	//fix this mess
+		if (end_index == end_position.block_p->size) {
+			end_index = 0;
+			if (end_position.block_p->next_p != NULL) {
+				end_position.block_p = end_position.block_p->next_p;
+			} else {
+				start_position.block_p->size = block_size_count;
+			}
+		}
+		if (end - start >= size) {
+			remove_blocks(start_position.pre_block_p, start_position.block_p, end_position.block_p);
+			size = 0;
+			return;
+		} else {
+			start_position.block_p->a[start_index++] = end_position.block_p->a[end_index++];
+			//end_position.block_p->size--;
+			block_size_count++;	// not sure how to use this info
+			if (block_size_count == end_position.block_p->size)
+				block_size_count = 0;
+			total_size_count++;
+		}
+	}
+	end_position.block_p->size -= block_size_count;	// not sure about this either
+	size -= total_size_count;
+	Block_position new_block_p = find_block(size-1);// cheeky way of removing blocks
+	new_block_p.block_p->next_p = NULL;	// cheeky way of removing blocks
 }												//-
 												//-
 // ********** private functions **********							//-

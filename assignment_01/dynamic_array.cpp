@@ -224,8 +224,11 @@ void Dynamic_array::remove(int i) {								//-
 
 	// case 2: block size == 1								//-
 	if (position.block_p->size == 1) {
-		remove_blocks(position.pre_block_p, position.block_p, position.block_p);
-
+		if (size == 1)
+			remove_blocks(NULL, position.block_p, position.block_p);
+		else
+			remove_blocks(position.pre_block_p, position.block_p, position.block_p);
+		
 	// case 3: block size > 1								//-
 	} else {
 		for (int k = position.i; k < position.block_p->size; k++) {
@@ -247,7 +250,7 @@ void Dynamic_array::remove(int start, int end) {						//-
 
 	// case 2: invalid start and end 
 	if (start > end) {
-		return;	// not sure about this solution
+		throw Subscript_range_exception();
 	}
 
 	// find start block position
@@ -256,43 +259,132 @@ void Dynamic_array::remove(int start, int end) {						//-
 	// find end block position
 	Block_position end_position = find_block(end);
 
-	// case 3: remove elements
-	int block_size_count = 0;
-	int total_size_count = 0;
-	int start_index = start_position.i;
-	int end_index = end_position.i;
 
-	for (int k = 0; k < end - start; k++) {
-		// if start index = block size start index = next_p->a[0]
-		if (start_index == BLOCK_SIZE){
-			start_index = 0;
-			start_position.block_p = start_position.block_p->next_p;
-		}	//fix this mess
-		if (end_index == end_position.block_p->size) {
-			end_index = 0;
-			if (end_position.block_p->next_p != NULL) {
-				end_position.block_p = end_position.block_p->next_p;
-			} else {
-				start_position.block_p->size = block_size_count;
+	// case 3 remove all blocks
+	if (end - start >= size) {
+		remove_blocks(NULL, start_position.block_p, end_position.block_p);
+		size = 0;
+		return;
+	}
+
+	int k = 0;
+	int j = 0;
+	int count;
+	int n = end_position.i;
+	Block * temp = new Block;
+
+
+	// case 4 removal from 1 block
+	if (start_position.block_p == end_position.block_p) {
+		for (k = start_position.i; k < end_position.i; k++) {
+			start_position.block_p->a[k] = start_position.block_p->a[n++];
+			start_position.block_p->size--;
+			if (start_position.block_p->size == 0) {
+				if (start_position.pre_block_p != NULL) {
+					//Block * copy_p = copy_blocks(start_position.block_p);
+					remove_blocks(start_position.pre_block_p, start_position.block_p, start_position.block_p);
+					//start_position.block_p = copy_p->next_p;
+				} else {
+					//Block * copy_p = start_position.block_p;
+					remove_blocks(NULL, start_position.block_p, start_position.block_p);
+					//start_position.block_p = copy_p->next_p;
+				}
 			}
 		}
-		if (end - start >= size) {
-			remove_blocks(start_position.pre_block_p, start_position.block_p, end_position.block_p);
-			size = 0;
-			return;
-		} else {
-			start_position.block_p->a[start_index++] = end_position.block_p->a[end_index++];
-			//end_position.block_p->size--;
-			block_size_count++;	// not sure how to use this info
-			if (block_size_count == end_position.block_p->size)
-				block_size_count = 0;
-			total_size_count++;
+	// case 5 removal from mulitple blocks
+	} else {
+		// first block
+		count = 0;
+		while (start_position.block_p->size != start_position.i) {
+			//cout << "here while" << endl;
+			start_position.block_p->size--;
+			//cout << start_position.block_p->size <<endl;
+			count++;
+			if (start_position.block_p->size == 0) {
+				//cout << "here0" << endl;
+				if (start_position.block_p->next_p != NULL){
+					temp = start_position.block_p;
+					remove_blocks(start_position.pre_block_p, start_position.block_p, start_position.block_p);
+					start_position.block_p = temp->next_p;
+					break;
+				} else {
+					remove_blocks(start_position.pre_block_p, start_position.block_p, start_position.block_p);
+					size = size - (end-start);
+					return;
+				}
+			}
+			if (start_position.block_p->size == start_position.i) {
+				if (start_position.block_p->next_p != NULL) {
+					
+					start_position.pre_block_p = start_position.block_p;
+					start_position.block_p = start_position.block_p->next_p;
+					break;
+				} else {
+					size = size - (end-start);
+					return;
+				}
+			}
+
+
 		}
+
+
+		for (k = count; k < end; k++) {
+			count = 0;
+			n = end_position.i;
+			// last block
+			if (start_position.block_p == end_position.block_p) {
+				//cout << "here last" << endl;
+				for (j = 0; j < start_position.block_p->size; j++) {
+					if (n < end_position.block_p->size) {
+						start_position.block_p->a[j] = start_position.block_p->a[n++];
+					}
+					count++;
+				}
+				start_position.block_p->size = end_position.block_p->size - end_position.i;
+				k += count;
+
+				if (start_position.block_p->size == 0) {
+					if (start_position.block_p->next_p != NULL) {
+						//cout << "here1" << endl;
+						temp = start_position.block_p->next_p;
+						remove_blocks(start_position.pre_block_p, start_position.block_p, start_position.block_p);
+						start_position.block_p = temp;
+						size = size - (end-start);
+						return;
+					} else {
+						//cout << "here2" << endl;
+						remove_blocks(start_position.pre_block_p, start_position.block_p, start_position.block_p);
+						size = size - (end-start);
+						return;
+					}
+				} else {
+					//cout << "here3" << endl;
+					size = size - (end - start);
+					return;
+				}
+			}
+
+			// middle blocks 
+			start_position.block_p->size--;
+			if (start_position.block_p->size == 0) {
+				if (start_position.block_p->next_p != NULL) {
+					//cout << "here4" << endl;
+					temp = start_position.block_p->next_p;
+					remove_blocks(start_position.pre_block_p, start_position.block_p, start_position.block_p);
+					start_position.block_p = temp;
+				} else {
+					//cout << "here5" << endl;
+					remove_blocks(start_position.pre_block_p, start_position.block_p, start_position.block_p);
+					size = size - (end-start);
+					return;
+				}
+			}
+		}
+
 	}
-	end_position.block_p->size -= block_size_count;	// not sure about this either
-	size -= total_size_count;
-	Block_position new_block_p = find_block(size-1);// cheeky way of removing blocks
-	new_block_p.block_p->next_p = NULL;	// cheeky way of removing blocks
+	size = size - (end-start);
+
 }												//-
 												//-
 // ********** private functions **********							//-

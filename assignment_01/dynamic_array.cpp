@@ -13,18 +13,27 @@ Dynamic_array::Dynamic_array() {								//-
 												//-
 Dynamic_array::Dynamic_array(Dynamic_array & d) {						//-
 	head_p = copy_blocks(d.head_p);
-	size = d.get_size();
+	size = d.size;
 }												//-
 												//-
 Dynamic_array &Dynamic_array::operator=(Dynamic_array & d) {					//-
+	// 
+	while (head_p != NULL) {
+		delete head_p;
+		head_p = head_p->next_p;
+	}
 	head_p = copy_blocks(d.head_p);
-	size = d.get_size();
+	size = d.size;
 	return *this;										//-
 }												//-
 												//-
 Dynamic_array::~Dynamic_array() {								//-
-	// no clue what to do here
-	delete head_p;
+	//
+	while (head_p != NULL) {
+		Block * temp = head_p;
+		delete head_p;
+		head_p = temp->next_p;
+	}
 }												//-
 												//-
 void Dynamic_array::print_state(void) {								//-
@@ -266,7 +275,7 @@ void Dynamic_array::remove(int start, int end) {						//-
 	Block_position end_position = find_block(end);
 
 
-	// case 3 remove all blocks
+	// case 3: remove all blocks
 	if (end - start >= size) {
 		remove_blocks(NULL, start_position.block_p, end_position.block_p);
 		size = 0;
@@ -280,7 +289,7 @@ void Dynamic_array::remove(int start, int end) {						//-
 	Block * temp = new Block;
 
 
-	// case 4 removal from 1 block
+	// case 4: removal from 1 block
 	if (start_position.block_p == end_position.block_p) {
 		for (k = start_position.i; k < end_position.i; k++) {
 			start_position.block_p->a[k] = start_position.block_p->a[n++];
@@ -297,9 +306,9 @@ void Dynamic_array::remove(int start, int end) {						//-
 				}
 			}
 		}
-	// case 5 removal from mulitple blocks
+	// case 5: removal from mulitple blocks
 	} else {
-		// first block
+		// case 5.a first block
 		count = 0;
 		while (start_position.block_p->size != start_position.i) {
 			//cout << "here while" << endl;
@@ -338,9 +347,9 @@ void Dynamic_array::remove(int start, int end) {						//-
 		for (k = count; k < end; k++) {
 			count = 0;
 			n = end_position.i;
-			// last block
+			// case 5.b last block
 			if (start_position.block_p == end_position.block_p) {
-				//cout << "here last" << endl;
+				//cout << "here last block" << endl;
 				for (j = 0; j < start_position.block_p->size; j++) {
 					if (n < end_position.block_p->size) {
 						start_position.block_p->a[j] = start_position.block_p->a[n++];
@@ -371,7 +380,7 @@ void Dynamic_array::remove(int start, int end) {						//-
 				}
 			}
 
-			// middle blocks 
+			// case 5.c middle blocks 
 			start_position.block_p->size--;
 			if (start_position.block_p->size == 0) {
 				if (start_position.block_p->next_p != NULL) {

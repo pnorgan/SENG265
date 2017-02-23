@@ -12,13 +12,19 @@ Dynamic_array::Dynamic_array() {								//-
 }												//-
 												//-
 Dynamic_array::Dynamic_array(Dynamic_array & d) {						//-
+	head_p = copy_blocks(d.head_p);
+	size = d.get_size();
 }												//-
 												//-
 Dynamic_array &Dynamic_array::operator=(Dynamic_array & d) {					//-
+	head_p = copy_blocks(d.head_p);
+	size = d.get_size();
 	return *this;										//-
 }												//-
 												//-
 Dynamic_array::~Dynamic_array() {								//-
+	// no clue what to do here
+	delete head_p;
 }												//-
 												//-
 void Dynamic_array::print_state(void) {								//-
